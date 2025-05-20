@@ -1,8 +1,11 @@
+from flask import Flask, jsonify, request
 import asyncio
 import aiohttp
 import re
-import BannerData_pb2  # Arquivo gerado via protoc
+import BannerData_pb2  # Seu arquivo .proto compilado
 from google.protobuf.json_format import MessageToDict
+
+app = Flask(__name__)
 
 def filtrar_por_hex(resposta_bytes):
     """Filtra bytes imprimíveis e Latin1."""
@@ -16,7 +19,7 @@ def filtrar_por_hex(resposta_bytes):
     return re.sub(r'\s+', ' ', texto).strip()
 
 async def pegar_token():
-    url = "seu link do token"
+    url = "https://token-delta-bay.vercel.app/token"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
             dados = await resp.json()
@@ -27,15 +30,14 @@ async def pegar_token():
             return ""
 
 def decodificar_protobuf(dados_binarios):
-    """Decodifica os bytes usando o esquema do BannerData.proto"""
     msg = BannerData_pb2.RootMessage()
     msg.ParseFromString(dados_binarios)
     return MessageToDict(msg, preserving_proto_field_name=True)
 
-async def main():
-    print("Pegando token...")
+async def executar_logica():
     token = await pegar_token()
-    print(f"Token obtido: {token}")
+    if not token:
+        return {"erro": "Token não encontrado"}, 500
 
     url_post = "https://client.us.freefiremobile.com/LoginGetSplash"
     headers = {
@@ -52,23 +54,19 @@ async def main():
 
     async with aiohttp.ClientSession() as session:
         async with session.post(url_post, headers=headers, data=data) as resp:
-            print(f"Status da resposta: {resp.status}")
             resposta_binaria = await resp.read()
-            with open("resposta.bin", "wb") as f:
-                f.write(resposta_binaria)
 
-    print("Decodificando resposta Protobuf...")
     try:
         dados = decodificar_protobuf(resposta_binaria)
-        print("\nResposta Protobuf decodificada:\n")
-        import json
-        print(json.dumps(dados, indent=2, ensure_ascii=False))
-        with open("resposta.json", "w", encoding="utf-8") as f:
-            json.dump(dados, f, indent=2, ensure_ascii=False)
+        return dados
     except Exception as e:
-        print(f"[ERRO] Falha ao decodificar Protobuf: {e}")
-        print("\nFallback (visualização filtrada):\n")
-        print(filtrar_por_hex(resposta_binaria))
+        texto_fallback = filtrar_por_hex(resposta_binaria)
+        return {"erro": "Falha ao decodificar Protobuf", "fallback": texto_fallback}
+
+@app.route("/splash", methods=["GET"])
+def splash_endpoint():
+    resultado = asyncio.run(executar_logica())
+    return jsonify(resultado)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    app.run(host="0.0.0.0", port=5000)
