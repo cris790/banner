@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+message RootMessage {
+  repeated BannerGroup banners = 1;
+  repeated EventGroup events = 2;
+}
+
+message BannerGroup {
+  repeated BannerEntry entries = 1;
+}
+
+message BannerEntry {
+  string region = 1;
+  int32 type = 2;
+  string title = 3;
+  string image_url = 5;
+  string action_link = 8;
+  int64 start_time = 10;
+  int64 end_time = 11;
+  string country = 12;
+  int32 campaign_id = 13;
+  int32 priority = 19;
+  string action_id = 20;
+  int32 layout = 22;
+}
+
+message EventGroup {
+  repeated EventEntry entries = 1;
+}
+
+message EventEntry {
+  string country = 1;
+  string region = 2;
+  int32 event_id = 3;
+  string title = 4;
+  int32 category = 5;
+  int64 start_time = 6;
+  int64 end_time = 7;
+  int32 group = 9;
+
+  oneof special_info {
+    string group_id = 10;
+    SubField special_sub_10 = 21; // Corrigido: número diferente de 10
+  }
+
+  oneof special_info_2 {
+    string group_id_2 = 12;
+    SubField special_sub_12 = 22; // Corrigido: número diferente de 12
+  }
+
+  string image_url = 14;
+  int32 layout = 15;
+  int32 width = 17;
+}
+
+message SubField {
+  int32 value = 7;
+}

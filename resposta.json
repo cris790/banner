@@ -1,0 +1,128 @@
+{
+  "banners": [
+    {
+      "entries": [
+        {
+          "region": "default",
+          "type": 5,
+          "title": "Resgate código aqui",
+          "action_link": "https://reward.ff.garena.com/pt?access_token=<GARENA_TOKEN>",
+          "start_time": "1737514800",
+          "end_time": "2054084399",
+          "country": "BR",
+          "campaign_id": 100147,
+          "priority": 99,
+          "action_id": "https://reward.ff.garena.com/pt?access_token=<GARENA_TOKEN>",
+          "layout": 3
+        },
+        {
+          "region": "default",
+          "type": 2,
+          "title": "Passe Booyah!",
+          "image_url": "https://dl.dir.freefiremobile.com/common/OB48/BR/Booyah_Pass_May_1400x700_BR_pt.jpg",
+          "action_link": "V2_BPTYPE_0_Level_0_rewardType_0",
+          "start_time": "1746068400",
+          "end_time": "1748746799",
+          "country": "BR",
+          "campaign_id": 100226,
+          "priority": 205,
+          "action_id": "V2_BPTYPE_0_Level_0_rewardType_0",
+          "layout": 1
+        },
+        {
+          "region": "default",
+          "type": 3,
+          "title": "Nova Temporada BR",
+          "image_url": "https://dl.dir.freefiremobile.com/common/OB48/BR/BR_New_rank_season_May_1400x700_BR_pt.jpg",
+          "action_link": "V2_Team_1_Match_2_Map_1_Game_1",
+          "start_time": "1746095400",
+          "end_time": "1751353199",
+          "country": "BR",
+          "campaign_id": 100227,
+          "priority": 53,
+          "action_id": "V2_Team_1_Match_2_Map_1_Game_1",
+          "layout": 1
+        }
+      ]
+    }
+  ],
+  "events": [
+    {
+      "entries": [
+        {
+          "country": "BR",
+          "region": "default",
+          "event_id": 20191,
+          "title": "[PRODUCT] New patch",
+          "category": 11,
+          "start_time": "1747810800",
+          "end_time": "1747969199",
+          "group": 7,
+          "group_id": "V2_category_10_groupId_0",
+          "group_id_2": "V2_category_10_groupId_0",
+          "image_url": "https://dl.dir.freefiremobile.com/common/OB49/BR/New_patch_1750x1070_BR_pt.png",
+          "layout": 3,
+          "width": 4000
+        },
+        {
+          "country": "BR",
+          "region": "default",
+          "event_id": 20186,
+          "title": "[REVENUE] Sporty Star Bundle M",
+          "category": 21,
+          "start_time": "1747623600",
+          "end_time": "1747796399",
+          "group": 178,
+          "image_url": "https://dl.dir.freefiremobile.com/common/OB48/BR/Sporty_Star_Bundle_M_1750x1070_BR_pt.png",
+          "layout": 3,
+          "width": 4000
+        },
+        {
+          "country": "BR",
+          "region": "default",
+          "event_id": 20192,
+          "title": "[REVENUE] Crystal Light Discounted",
+          "category": 21,
+          "start_time": "1747796400",
+          "end_time": "1748055599",
+          "group": 15,
+          "group_id": "19",
+          "group_id_2": "19",
+          "image_url": "https://dl.dir.freefiremobile.com/common/OB49/BR/Crystal_Light_Discounted_1750x1070_BR_pt.png",
+          "layout": 3,
+          "width": 4000
+        },
+        {
+          "country": "BR",
+          "region": "default",
+          "event_id": 20185,
+          "title": "[REVENUE] TW Galaxy Beast ",
+          "category": 11,
+          "start_time": "1747623600",
+          "end_time": "1747796399",
+          "group": 15,
+          "group_id": "87",
+          "group_id_2": "87",
+          "image_url": "https://dl.dir.freefiremobile.com/common/OB48/BR/TW_Galaxy_Beast_1750x1070_BR_pt.png",
+          "layout": 3,
+          "width": 4000
+        },
+        {
+          "country": "BR",
+          "region": "default",
+          "event_id": 20193,
+          "title": "[REVENUE] Crystal light Unisex bundle",
+          "category": 11,
+          "start_time": "1747969200",
+          "end_time": "1748228399",
+          "group": 15,
+          "group_id": "89",
+          "group_id_2": "89",
+          "image_url": "https://dl.dir.freefiremobile.com/common/OB49/BR/Crystal_light_Unisex_bundle_1750x1070_BR_pt.png",
+          "layout": 3,
+          "width": 4000
+        }
+      ]
+    }
+  ]
+}
