@@ -2,3 +2,9 @@ aiohttp
 protobuf
 fastapi 
 uvicorn
+Flask
+Gunicorn
+user_agent
+requests
+pycryptodome
+crypto
