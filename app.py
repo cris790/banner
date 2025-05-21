@@ -19,7 +19,7 @@ def filtrar_por_hex(resposta_bytes):
     return re.sub(r'\s+', ' ', texto).strip()
 
 async def pegar_token():
-    url = "https://token-delta-bay.vercel.app/token"
+    url = "https://tokensff.vercel.app/token"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
             dados = await resp.json()
