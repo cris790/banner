@@ -2,139 +2,71 @@ from flask import Flask, jsonify, request
 import asyncio
 import aiohttp
 import re
-import BannerData_pb2
+import BannerData_pb2  # Seu arquivo .proto compilado
 from google.protobuf.json_format import MessageToDict
-from datetime import datetime
 
 app = Flask(__name__)
 
-# Configurações
-REQUEST_TIMEOUT = 15
-MAX_RETRIES = 2
-REGIONS = {
-    "BR": {"domain": "br", "credentials": ("3938172433", "ADITYA_FREE_INFO_NA")},
-    "US": {"domain": "us", "credentials": ("3938172433", "ADITYA_FREE_INFO_NA")},
-    "IND": {"domain": "ind", "credentials": ("3938172055", "ADITYA_FREE_INFO_IND")},
-    "SG": {"domain": "sg", "credentials": ("3938172267", "ADITYA_FREE_INFO_SG")}
-}
+def filtrar_por_hex(resposta_bytes):
+    """Filtra bytes imprimíveis e Latin1."""
+    filtrado = []
+    for b in resposta_bytes:
+        if (0x20 <= b <= 0x7E) or (0xA0 <= b <= 0xFF):
+            filtrado.append(chr(b))
+        else:
+            filtrado.append(' ')
+    texto = ''.join(filtrado)
+    return re.sub(r'\s+', ' ', texto).strip()
 
-class SplashService:
-    @staticmethod
-    async def get_jwt_token(region):
-        """Obtém token JWT com retry automático"""
-        uid, password = REGIONS[region]["credentials"]
-        url = f"https://genjwt.vercel.app/api/get_jwt?type=4&guest_uid={uid}&guest_password={password}"
-        
-        async with aiohttp.ClientSession() as session:
-            for attempt in range(MAX_RETRIES + 1):
-                try:
-                    async with session.get(url, timeout=REQUEST_TIMEOUT) as resp:
-                        if resp.status == 200:
-                            data = await resp.json()
-                            return data.get('BearerAuth')
-                        elif attempt == MAX_RETRIES:
-                            return None
-                except (aiohttp.ClientError, asyncio.TimeoutError):
-                    if attempt == MAX_RETRIES:
-                        return None
-                await asyncio.sleep(1)  # Espera antes de tentar novamente
+async def pegar_token():
+    url = "https://tokentteste.vercel.app/token"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            dados = await resp.json()
+            if isinstance(dados, list) and len(dados) > 0:
+                return dados[0].get("token", "")
+            elif isinstance(dados, dict):
+                return dados.get("token", "")
+            return ""
 
-    @staticmethod
-    async def fetch_splash_data(region):
-        """Busca dados de splash com fallback para outras regiões"""
-        token = await SplashService.get_jwt_token(region)
-        if not token:
-            return {"error": "Failed to get JWT token after retries"}, 500
+def decodificar_protobuf(dados_binarios):
+    msg = BannerData_pb2.RootMessage()
+    msg.ParseFromString(dados_binarios)
+    return MessageToDict(msg, preserving_proto_field_name=True)
 
-        # Tenta primeiro a região solicitada
-        result = await SplashService._try_region(region, token)
-        if not result.get("error"):
-            return result
+async def executar_logica():
+    token = await pegar_token()
+    if not token:
+        return {"erro": "Token não encontrado"}, 500
 
-        # Se falhar, tenta outras regiões como fallback
-        for fallback_region in [r for r in REGIONS if r != region]:
-            result = await SplashService._try_region(fallback_region, token)
-            if not result.get("error"):
-                result["warning"] = f"Using data from {fallback_region} as fallback"
-                return result
+    url_post = "https://client.us.freefiremobile.com/LoginGetSplash"
+    headers = {
+        "Expect": "100-continue",
+        "X-Unity-Version": "2018.4.11f1",
+        "ReleaseVersion": "OB48",
+        "X-GA": "v1 1",
+        "Authorization": f"Bearer {token}",
+        "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 6.0.1; ASUS_Z01QD Build/V417IR)",
+        "Host": "client.us.freefiremobile.com",
+    }
 
-        return {"error": "All regions failed"}, 502
+    data = b"\xA5\xE1\x89\x0E\xE5\x83\xC7\xDF\x22\xA0\x5F\x2E\x7C\xCF\xFE\xE2"
 
-    @staticmethod
-    async def _try_region(region, token):
-        """Tenta obter dados de uma região específica"""
-        domain = REGIONS[region]["domain"]
-        url = f"https://client.{domain}.freefiremobile.com/LoginGetSplash"
-        headers = {
-            "Expect": "100-continue",
-            "X-Unity-Version": "2018.4.11f1",
-            "ReleaseVersion": "OB48",
-            "X-GA": "v1 1",
-            "Authorization": f"Bearer {token}",
-            "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 6.0.1; ASUS_Z01QD Build/V417IR)",
-            "Host": f"client.{domain}.freefiremobile.com",
-        }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url_post, headers=headers, data=data) as resp:
+            resposta_binaria = await resp.read()
 
-        data = b"\xA5\xE1\x89\x0E\xE5\x83\xC7\xDF\x22\xA0\x5F\x2E\x7C\xCF\xFE\xE2"
-
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(url, headers=headers, data=data, timeout=REQUEST_TIMEOUT) as resp:
-                    if resp.status != 200:
-                        return {"error": f"Server {domain} returned HTTP {resp.status}"}
-                    
-                    content = await resp.read()
-                    
-                    # Verifica se é uma resposta HTML de erro
-                    if content.startswith(b'<html>') or content.startswith(b'<!DOCTYPE html>'):
-                        return {"error": f"Server {domain} returned HTML error page"}
-                    
-                    # Tenta decodificar como Protobuf
-                    try:
-                        msg = BannerData_pb2.RootMessage()
-                        msg.ParseFromString(content)
-                        return MessageToDict(msg, preserving_proto_field_name=True)
-                    except Exception as e:
-                        return {"error": f"Failed to decode Protobuf from {domain}: {str(e)}"}
-
-        except asyncio.TimeoutError:
-            return {"error": f"Timeout when accessing {domain}"}
-        except aiohttp.ClientError as e:
-            return {"error": f"Connection error to {domain}: {str(e)}"}
+    try:
+        dados = decodificar_protobuf(resposta_binaria)
+        return dados
+    except Exception as e:
+        texto_fallback = filtrar_por_hex(resposta_binaria)
+        return {"erro": "Falha ao decodificar Protobuf", "fallback": texto_fallback}
 
 @app.route("/splash", methods=["GET"])
 def splash_endpoint():
-    """Endpoint principal para obter dados de splash"""
-    region = request.args.get('region', 'US').upper()
-    
-    if region not in REGIONS:
-        return jsonify({
-            "status": "error",
-            "message": "Invalid region specified",
-            "valid_regions": list(REGIONS.keys()),
-            "timestamp": datetime.utcnow().isoformat()
-        }), 400
-    
-    result, status_code = asyncio.run(SplashService.fetch_splash_data(region))
-    
-    response = {
-        "status": "error" if "error" in result else "success",
-        "region": region,
-        "timestamp": datetime.utcnow().isoformat(),
-        "credit": "YourNameHere"
-    }
-    
-    if "error" in result:
-        response.update({
-            "error": result["error"],
-            "details": result.get("fallback", "No additional details")
-        })
-        if "warning" in result:
-            response["warning"] = result["warning"]
-    else:
-        response["data"] = result
-    
-    return jsonify(response), status_code
+    resultado = asyncio.run(executar_logica())
+    return jsonify(resultado)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
