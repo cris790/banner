@@ -4,9 +4,6 @@ import aiohttp
 import re
 import BannerData_pb2  # Seu arquivo .proto compilado
 from google.protobuf.json_format import MessageToDict
-from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
-import binascii
 
 app = Flask(__name__)
 
@@ -44,16 +41,16 @@ def filtrar_por_hex(resposta_bytes):
     return re.sub(r'\s+', ' ', texto).strip()
 
 def decodificar_protobuf(dados_binarios):
-    """Decodifica dados binários Protobuf para dicionário"""
+    """Decodifica dados Protobuf para dicionário"""
     msg = BannerData_pb2.RootMessage()
     msg.ParseFromString(dados_binarios)
     return MessageToDict(msg, preserving_proto_field_name=True)
 
 async def fetch_splash_data(region):
-    """Busca dados do splash screen para a região especificada"""
+    """Busca dados de splash screen do servidor"""
     token = await get_jwt_token(region)
     if not token:
-        return {"erro": "Falha ao obter token JWT"}, 500
+        return {"error": "Failed to get JWT token"}, 500
 
     url_post = "https://client.us.freefiremobile.com/LoginGetSplash"
     headers = {
@@ -77,24 +74,29 @@ async def fetch_splash_data(region):
         return dados
     except Exception as e:
         texto_fallback = filtrar_por_hex(resposta_binaria)
-        return {"erro": "Falha ao decodificar Protobuf", "fallback": texto_fallback}
+        return {"error": "Failed to decode Protobuf", "fallback": texto_fallback}
 
 @app.route("/splash", methods=["GET"])
 def splash_endpoint():
-    """Endpoint principal para obter dados do splash screen"""
+    """Endpoint principal para obter dados de splash"""
     region = request.args.get('region', 'US').upper()
+    
     if region not in ["IND", "NA", "BR", "SAC", "US", "SG"]:
-        return jsonify({"error": "Região inválida. Use IND, NA, BR, SAC, US ou SG"}), 400
+        return jsonify({"error": "Invalid region specified"}), 400
     
     resultado = asyncio.run(fetch_splash_data(region))
     
-    # Adiciona créditos e informações adicionais
-    if not isinstance(resultado, dict) or 'erro' in resultado:
-        return jsonify(resultado), 500
+    if isinstance(resultado, tuple) and resultado[0].get("error"):
+        return jsonify(resultado[0]), resultado[1]
     
-    resultado['credit'] = 'SeuCréditoAqui'  # Adicione seus créditos
-    resultado['region'] = region
-    return jsonify(resultado)
+    response = {
+        "status": "success",
+        "region": region,
+        "data": resultado,
+        "credit": "YourNameHere"  # Adicione seus créditos
+    }
+    
+    return jsonify(response)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
