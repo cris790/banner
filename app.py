@@ -7,6 +7,9 @@ from google.protobuf.json_format import MessageToDict
 
 app = Flask(__name__)
 
+# Tempo limite para requisições (em segundos)
+REQUEST_TIMEOUT = 10
+
 def get_credentials(region):
     """Retorna UID e password com base na região"""
     region = region.upper()
@@ -22,12 +25,15 @@ async def get_jwt_token(region):
     uid, password = get_credentials(region)
     url = f"https://genjwt.vercel.app/api/get_jwt?type=4&guest_uid={uid}&guest_password={password}"
     
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            if resp.status != 200:
-                return None
-            data = await resp.json()
-            return data.get('BearerAuth')
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, timeout=REQUEST_TIMEOUT) as resp:
+                if resp.status != 200:
+                    return None
+                data = await resp.json()
+                return data.get('BearerAuth')
+    except (aiohttp.ClientError, asyncio.TimeoutError):
+        return None
 
 def filtrar_por_hex(resposta_bytes):
     """Filtra bytes imprimíveis e Latin1."""
@@ -52,7 +58,7 @@ async def fetch_splash_data(region):
     if not token:
         return {"error": "Failed to get JWT token"}, 500
 
-    url_post = "https://client.us.freefiremobile.com/LoginGetSplash"
+    url_post = f"https://client.{'us' if region in ['NA', 'BR', 'SAC', 'US'] else region.lower()}.freefiremobile.com/LoginGetSplash"
     headers = {
         "Expect": "100-continue",
         "X-Unity-Version": "2018.4.11f1",
@@ -60,21 +66,35 @@ async def fetch_splash_data(region):
         "X-GA": "v1 1",
         "Authorization": f"Bearer {token}",
         "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 6.0.1; ASUS_Z01QD Build/V417IR)",
-        "Host": "client.us.freefiremobile.com",
+        "Host": f"client.{'us' if region in ['NA', 'BR', 'SAC', 'US'] else region.lower()}.freefiremobile.com",
     }
 
     data = b"\xA5\xE1\x89\x0E\xE5\x83\xC7\xDF\x22\xA0\x5F\x2E\x7C\xCF\xFE\xE2"
 
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url_post, headers=headers, data=data) as resp:
-            resposta_binaria = await resp.read()
-
     try:
-        dados = decodificar_protobuf(resposta_binaria)
-        return dados
-    except Exception as e:
-        texto_fallback = filtrar_por_hex(resposta_binaria)
-        return {"error": "Failed to decode Protobuf", "fallback": texto_fallback}
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url_post, headers=headers, data=data, timeout=REQUEST_TIMEOUT) as resp:
+                if resp.status != 200:
+                    return {"error": f"Server returned HTTP {resp.status}", "fallback": f"HTTP Error {resp.status}"}, 502
+                
+                resposta_binaria = await resp.read()
+                
+                # Verifica se é um erro HTML
+                if resposta_binaria.startswith(b'<html>') or resposta_binaria.startswith(b'<!DOCTYPE html>'):
+                    texto_fallback = filtrar_por_hex(resposta_binaria)
+                    return {"error": "Server returned HTML error page", "fallback": texto_fallback}, 502
+
+                try:
+                    dados = decodificar_protobuf(resposta_binaria)
+                    return dados
+                except Exception as e:
+                    texto_fallback = filtrar_por_hex(resposta_binaria)
+                    return {"error": f"Failed to decode Protobuf: {str(e)}", "fallback": texto_fallback}, 500
+
+    except asyncio.TimeoutError:
+        return {"error": "Request timeout"}, 504
+    except aiohttp.ClientError as e:
+        return {"error": f"Connection error: {str(e)}"}, 502
 
 @app.route("/splash", methods=["GET"])
 def splash_endpoint():
@@ -82,21 +102,31 @@ def splash_endpoint():
     region = request.args.get('region', 'US').upper()
     
     if region not in ["IND", "NA", "BR", "SAC", "US", "SG"]:
-        return jsonify({"error": "Invalid region specified"}), 400
+        return jsonify({
+            "status": "error",
+            "message": "Invalid region specified",
+            "valid_regions": ["IND", "NA", "BR", "SAC", "US", "SG"]
+        }), 400
     
-    resultado = asyncio.run(fetch_splash_data(region))
+    resultado, status_code = asyncio.run(fetch_splash_data(region))
     
-    if isinstance(resultado, tuple) and resultado[0].get("error"):
-        return jsonify(resultado[0]), resultado[1]
+    if "error" in resultado:
+        response = {
+            "status": "error",
+            "region": region,
+            "error": resultado.get("error"),
+            "details": resultado.get("fallback"),
+            "credit": "YourNameHere"
+        }
+    else:
+        response = {
+            "status": "success",
+            "region": region,
+            "data": resultado,
+            "credit": "YourNameHere"
+        }
     
-    response = {
-        "status": "success",
-        "region": region,
-        "data": resultado,
-        "credit": "YourNameHere"  # Adicione seus créditos
-    }
-    
-    return jsonify(response)
+    return jsonify(response), status_code
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
