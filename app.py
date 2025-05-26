@@ -4,8 +4,33 @@ import aiohttp
 import re
 import BannerData_pb2  # Seu arquivo .proto compilado
 from google.protobuf.json_format import MessageToDict
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad
+import binascii
 
 app = Flask(__name__)
+
+def get_credentials(region):
+    """Retorna UID e password com base na região"""
+    region = region.upper()
+    if region == "IND":
+        return "3938172055", "ADITYA_FREE_INFO_IND"
+    elif region in ["NA", "BR", "SAC", "US"]:
+        return "3938172433", "ADITYA_FREE_INFO_NA"
+    else:
+        return "3938172267", "ADITYA_FREE_INFO_SG"
+
+async def get_jwt_token(region):
+    """Obtém token JWT para a região especificada"""
+    uid, password = get_credentials(region)
+    url = f"https://genjwt.vercel.app/api/get_jwt?type=4&guest_uid={uid}&guest_password={password}"
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as resp:
+            if resp.status != 200:
+                return None
+            data = await resp.json()
+            return data.get('BearerAuth')
 
 def filtrar_por_hex(resposta_bytes):
     """Filtra bytes imprimíveis e Latin1."""
@@ -18,26 +43,17 @@ def filtrar_por_hex(resposta_bytes):
     texto = ''.join(filtrado)
     return re.sub(r'\s+', ' ', texto).strip()
 
-async def pegar_token():
-    url = "https://tokentteste.vercel.app/token"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as resp:
-            dados = await resp.json()
-            if isinstance(dados, list) and len(dados) > 0:
-                return dados[0].get("token", "")
-            elif isinstance(dados, dict):
-                return dados.get("token", "")
-            return ""
-
 def decodificar_protobuf(dados_binarios):
+    """Decodifica dados binários Protobuf para dicionário"""
     msg = BannerData_pb2.RootMessage()
     msg.ParseFromString(dados_binarios)
     return MessageToDict(msg, preserving_proto_field_name=True)
 
-async def executar_logica():
-    token = await pegar_token()
+async def fetch_splash_data(region):
+    """Busca dados do splash screen para a região especificada"""
+    token = await get_jwt_token(region)
     if not token:
-        return {"erro": "Token não encontrado"}, 500
+        return {"erro": "Falha ao obter token JWT"}, 500
 
     url_post = "https://client.us.freefiremobile.com/LoginGetSplash"
     headers = {
@@ -65,7 +81,19 @@ async def executar_logica():
 
 @app.route("/splash", methods=["GET"])
 def splash_endpoint():
-    resultado = asyncio.run(executar_logica())
+    """Endpoint principal para obter dados do splash screen"""
+    region = request.args.get('region', 'US').upper()
+    if region not in ["IND", "NA", "BR", "SAC", "US", "SG"]:
+        return jsonify({"error": "Região inválida. Use IND, NA, BR, SAC, US ou SG"}), 400
+    
+    resultado = asyncio.run(fetch_splash_data(region))
+    
+    # Adiciona créditos e informações adicionais
+    if not isinstance(resultado, dict) or 'erro' in resultado:
+        return jsonify(resultado), 500
+    
+    resultado['credit'] = 'SeuCréditoAqui'  # Adicione seus créditos
+    resultado['region'] = region
     return jsonify(resultado)
 
 if __name__ == "__main__":
