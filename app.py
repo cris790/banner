@@ -43,7 +43,7 @@ async def executar_logica():
     headers = {
         "Expect": "100-continue",
         "X-Unity-Version": "2018.4.11f1",
-        "ReleaseVersion": "OB48",
+        "ReleaseVersion": "OB49",
         "X-GA": "v1 1",
         "Authorization": f"Bearer {token}",
         "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 6.0.1; ASUS_Z01QD Build/V417IR)",
