@@ -20,7 +20,7 @@ def get_credentials(region):
 async def pegar_token(region):
     """Obtém token JWT para a região especificada"""
     uid, password, _ = get_credentials(region)
-    url = f"https://tokensff.vercel.app/token?uid={uid}&password={password}"
+    url = f"https://genjwt.vercel.app/api/get_jwt?type=4&guest_uid={uid}&guest_password={password}"
     
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
