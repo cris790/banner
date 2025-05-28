@@ -11,7 +11,7 @@ def get_credentials(region):
     """Retorna token e URL base com base na região"""
     region = region.upper()
     if region in ["NA", "BR", "SAC", "US"]:
-        return "3938172433", "ADITYA_FREE_INFO_NA", "https://client.us.freefiremobile.com"
+        return "3872973665", "01007C5BD24A6B251672794135D004EAD9615220E377C928AE6FDFBA54CF4D97", "https://client.us.freefiremobile.com"
     elif region == "IND":
         return "3938172055", "ADITYA_FREE_INFO_IND", "https://client.in.freefiremobile.com"
     else:  # Padrão para outras regiões (SG, etc)
