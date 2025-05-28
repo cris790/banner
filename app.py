@@ -13,9 +13,9 @@ def get_credentials(region):
     if region in ["NA", "BR", "SAC", "US"]:
         return "3872973665", "01007C5BD24A6B251672794135D004EAD9615220E377C928AE6FDFBA54CF4D97", "https://client.us.freefiremobile.com"
     elif region == "IND":
-        return "3938172055", "ADITYA_FREE_INFO_IND", "https://client.in.freefiremobile.com"
+        return "3872973665", "01007C5BD24A6B251672794135D004EAD9615220E377C928AE6FDFBA54CF4D97", "https://client.in.freefiremobile.com"
     else:  # Padrão para outras regiões (SG, etc)
-        return "3938172267", "ADITYA_FREE_INFO_SG", "https://client.sg.freefiremobile.com"
+        return "3872973665", "01007C5BD24A6B251672794135D004EAD9615220E377C928AE6FDFBA54CF4D97", "https://client.sg.freefiremobile.com"
 
 async def pegar_token(region):
     """Obtém token JWT para a região especificada"""
