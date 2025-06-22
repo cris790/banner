@@ -18,15 +18,13 @@ def filtrar_por_hex(resposta_bytes):
     texto = ''.join(filtrado)
     return re.sub(r'\s+', ' ', texto).strip()
 
-async def pegar_token():
-    url = "https://tokenff.discloud.app/token"
+async def pegar_jwt():
+    url = "https://genjwt.vercel.app/api/get_jwt?type=4&guest_uid=3608304803&guest_password=BC45FFFEAE17C82DACE6742F339ADBC2CDBB05AF6A23025E963AD03ABA4523FD"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
             dados = await resp.json()
-            if isinstance(dados, list) and len(dados) > 0:
-                return dados[0].get("token", "")
-            elif isinstance(dados, dict):
-                return dados.get("token", "")
+            if dados.get("success", False):
+                return dados.get("BearerAuth", "")
             return ""
 
 def decodificar_protobuf(dados_binarios):
@@ -35,9 +33,9 @@ def decodificar_protobuf(dados_binarios):
     return MessageToDict(msg, preserving_proto_field_name=True)
 
 async def executar_logica():
-    token = await pegar_token()
+    token = await pegar_jwt()
     if not token:
-        return {"erro": "Token não encontrado"}, 500
+        return {"erro": "Token JWT não encontrado"}, 500
 
     url_post = "https://client.us.freefiremobile.com/LoginGetSplash"
     headers = {
