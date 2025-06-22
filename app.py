@@ -1,4 +1,4 @@
-1from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request
 import asyncio
 import aiohttp
 import re
@@ -18,14 +18,14 @@ def filtrar_por_hex(resposta_bytes):
     texto = ''.join(filtrado)
     return re.sub(r'\s+', ' ', texto).strip()
 
-async def pegar_jwt():
-    url = "https://genjwt.vercel.app/api/get_jwt?type=4&guest_uid=3743593901&guest_password=07B3A66A0FEF912E2CF0194EF606D26C3581FB4F5E225B814208C6076DB19F90"
+async def pegar_jwt(uid, password):
+    url = f"https://aditya-jwt-v9op.onrender.com/token?uid={uid}&password={password}"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
             dados = await resp.json()
-            if dados.get("success", False):
-                return dados.get("BearerAuth", "")
-            return ""
+            if "token" in dados:
+                return dados["token"], dados.get("serverUrl", "https://client.us.freefiremobile.com")
+            return "", "https://client.us.freefiremobile.com"
 
 def decodificar_protobuf(dados_binarios):
     msg = BannerData_pb2.RootMessage()
@@ -33,11 +33,15 @@ def decodificar_protobuf(dados_binarios):
     return MessageToDict(msg, preserving_proto_field_name=True)
 
 async def executar_logica():
-    token = await pegar_jwt()
+    # Dados fixos conforme seu exemplo
+    uid = "3743593901"
+    password = "07B3A66A0FEF912E2CF0194EF606D26C3581FB4F5E225B814208C6076DB19F90"
+    
+    token, server_url = await pegar_jwt(uid, password)
     if not token:
         return {"erro": "Token JWT não encontrado"}, 500
 
-    url_post = "https://client.us.freefiremobile.com/LoginGetSplash"
+    url_post = f"{server_url}/LoginGetSplash"
     headers = {
         "Expect": "100-continue",
         "X-Unity-Version": "2018.4.11f1",
