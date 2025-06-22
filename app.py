@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+1from flask import Flask, jsonify, request
 import asyncio
 import aiohttp
 import re
@@ -19,7 +19,7 @@ def filtrar_por_hex(resposta_bytes):
     return re.sub(r'\s+', ' ', texto).strip()
 
 async def pegar_jwt():
-    url = "https://genjwt.vercel.app/api/get_jwt?type=4&guest_uid=3873025238&guest_password=B1C5253C619246E44B9D6E0C6002CA6070E672D598629B53DC4140BB2C26FF12"
+    url = "https://genjwt.vercel.app/api/get_jwt?type=4&guest_uid=3743593901&guest_password=07B3A66A0FEF912E2CF0194EF606D26C3581FB4F5E225B814208C6076DB19F90"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
             dados = await resp.json()
