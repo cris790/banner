@@ -19,7 +19,7 @@ def filtrar_por_hex(resposta_bytes):
     return re.sub(r'\s+', ' ', texto).strip()
 
 async def pegar_jwt():
-    url = "https://genjwt.vercel.app/api/get_jwt?type=4&guest_uid=3608304803&guest_password=BC45FFFEAE17C82DACE6742F339ADBC2CDBB05AF6A23025E963AD03ABA4523FD"
+    url = "https://genjwt.vercel.app/api/get_jwt?type=4&guest_uid=3873025238&guest_password=B1C5253C619246E44B9D6E0C6002CA6070E672D598629B53DC4140BB2C26FF12"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
             dados = await resp.json()
