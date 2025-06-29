@@ -19,12 +19,12 @@ def filtrar_por_hex(resposta_bytes):
     return re.sub(r'\s+', ' ', texto).strip()
 
 async def pegar_jwt(uid, password):
-    url = f"https://aditya-jwt-v9op.onrender.com/token?uid={uid}&password={password}"
+    url = f"https://genjwt.vercel.app/api/get_jwt?type=4&guest_uid={uid}&guest_password={password}"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as resp:
             dados = await resp.json()
-            if "token" in dados:
-                return dados["token"], dados.get("serverUrl", "https://client.us.freefiremobile.com")
+            if dados.get("success") and "BearerAuth" in dados:
+                return dados["BearerAuth"], "https://client.us.freefiremobile.com"
             return "", "https://client.us.freefiremobile.com"
 
 def decodificar_protobuf(dados_binarios):
